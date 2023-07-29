@@ -1,0 +1,46 @@
+(defun bellman-ford (matriz num-nodos origen)
+  (let ((distancias (make-list num-nodos :initial-element most-positive-fixnum))
+        (predecesores (make-list num-nodos :initial-element nil)))
+    (setf (nth origen distancias) 0)
+
+    (dotimes (_ (1- num-nodos))
+      (dotimes (u num-nodos)
+        (dotimes (v num-nodos)
+          (let ((peso (nth v (nth u matriz))))
+            (let ((alt (+ (nth u distancias) peso)))
+              (when (and (< (nth u distancias) most-positive-fixnum) (< alt (nth v distancias)))
+                (setf (nth v distancias) alt)
+                (setf (nth v predecesores) u)))))))
+
+    (mostrar-resultados distancias predecesores)))
+
+(defun mostrar-resultados (distancias predecesores)
+  (format t "Nodo\tDistancia desde fuente\tCamino~%")
+  (dotimes (i (length distancias))
+    (let ((dist (nth i distancias))
+          (path (reconstruir-camino i predecesores)))
+      (format t "~A\t~A\t\t~A~%" i dist
+              (if path (format nil "~{~A -> ~}~A" path) "N/A")))))
+
+(defun reconstruir-camino (nodo predecesores)
+  (defun recursar (n acc)
+    (if (null n)
+        acc
+        (recursar (nth n predecesores) (cons n acc))))
+  
+  (let ((camino (recursar nodo nil)))
+    (if (null camino)
+        nil ; Devolver una lista vacía en lugar de "N/A"
+        camino)))
+
+;; Ejemplo de uso con medición del tiempo de ejecución
+(let* ((matriz '((0 4 2 0 0)
+                 (4 0 1 5 0)
+                 (2 1 0 8 10)
+                 (0 5 8 0 2)
+                 (0 0 10 2 0)))
+       (num-nodos (length matriz))
+       (origen 0)
+       (tiempo-inicio (get-internal-real-time)))
+  (bellman-ford matriz num-nodos origen)
+  (format t "Tiempo de ejecución: ~A segundos~%" (/ (- (get-internal-real-time) tiempo-inicio) internal-time-units-per-second)))  
