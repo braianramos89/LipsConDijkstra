@@ -1,0 +1,48 @@
+(defun dibujar-grafo (matriz)
+  (format t "Grafo ingresado:~%")
+  (dotimes (i (length matriz))
+    (dotimes (j (length (nth i matriz)))
+      (when (/= (nth i (nth j matriz)) 0)
+        (format t "~a -- ~a --> ~a~%"
+                i (nth i (nth j matriz)) j)))))
+
+(defun dijkstra (matriz origen destino)
+  (let* ((nodos (length matriz))
+         (distancias (make-list nodos :initial-element most-positive-fixnum))
+         (visitados (make-list nodos :initial-element nil))
+         (previos (make-list nodos :initial-element nil))
+         (actual origen))
+    (setf (nth origen distancias) 0)
+    (loop while (not (nth destino visitados)) do
+      (setf (nth actual visitados) t)
+      (dotimes (i nodos)
+        (when (and (not (nth i visitados))
+                   (/= (nth i (nth actual matriz)) 0)
+                   (< (+ (nth actual distancias)
+                         (nth i (nth actual matriz)))
+                      (nth i distancias)))
+          (setf (nth i distancias) (+ (nth actual distancias)
+                                      (nth i (nth actual matriz))))
+          (setf (nth i previos) actual)))
+      (setf actual (loop for i below nodos
+                        unless (nth i visitados)
+                        minimize (nth i distancias)
+                        into min-val
+                        finally (return (position min-val distancias)))))
+    (setf actual destino)
+    (let ((camino '()))
+      (loop while actual do
+        (push actual camino)
+        (setf actual (nth actual previos)))
+      (format t "Camino de menor peso: ~a~%" camino))))
+
+;; Ejemplo de uso
+(let* ((matriz '((0 4 2 0 0)
+                 (4 0 1 5 0)
+                 (2 1 0 8 10)
+                 (0 5 8 0 2)
+                 (0 0 10 2 0)))
+       (origen 0)
+       (destino 4))
+  (dibujar-grafo matriz)
+  (dijkstra matriz origen destino))
