@@ -1,0 +1,60 @@
+(defun heuristica (nodo objetivo)
+  ;; Función heurística para estimar el costo desde 'nodo' hasta el objetivo 'objetivo'.
+  ;; En este caso, se utiliza la distancia en línea recta (distancia euclidiana) entre los nodos.
+  (let ((dx (- (car objetivo) (car nodo)))
+        (dy (- (cadr objetivo) (cadr nodo))))
+    (sqrt (+ (* dx dx) (* dy dy)))))
+
+(defun a-estrella (grafo inicio objetivo)
+  (let ((lista-abierta (list (list inicio)))
+        (lista-cerrada '())
+        (g-score (make-hash-table :test 'equal))
+        (f-score (make-hash-table :test 'equal))
+        (tiempo-inicio (get-internal-real-time))) ; Marcar el inicio del tiempo de ejecución
+    (setf (gethash inicio g-score) 0)
+    (setf (gethash inicio f-score) (heuristica inicio objetivo))
+    
+    (loop while lista-abierta do
+      (let* ((nodo-actual (caar lista-abierta))
+             (camino-actual (car lista-abierta))
+             (g-actual (gethash nodo-actual g-score))
+             (f-actual (gethash nodo-actual f-score)))
+        (when (equal nodo-actual objetivo)
+          (format t "Camino de menor peso: ~A~%" camino-actual)
+          (format t "Tiempo de ejecución: ~A segundos~%" (get-tiempo-ejecucion tiempo-inicio)) ; Mostrar el tiempo de ejecución
+          (return))
+        (setf lista-abierta (cdr lista-abierta))
+        (push nodo-actual lista-cerrada)    
+        (dolist (vecino (nth nodo-actual grafo))
+          (let* ((nodo-vecino (car vecino))
+                 (costo-vecino (cadr vecino))
+                 (g-tentativo (+ g-actual costo-vecino)))
+            (unless (or (member nodo-vecino lista-cerrada)
+                        (some (lambda (camino) (equal (car camino) nodo-vecino))
+                              lista-abierta))
+              (push nodo-vecino (car lista-abierta))
+              (setf (gethash nodo-vecino g-score) g-tentativo)
+              (setf (gethash nodo-vecino f-score)
+                    (+ g-tentativo (heuristica nodo-vecino objetivo)))
+              (setf (cdr lista-abierta)
+                    (sort (cdr lista-abierta)
+                          (lambda (a b)
+                            (< (gethash (car a) f-score)
+                               (gethash (car b) f-score))))))))))
+  
+;; Función para obtener el tiempo de ejecución en segundos
+(defun get-tiempo-ejecucion (tiempo-inicio)
+  (/ (- (get-internal-real-time) tiempo-inicio) internal-time-units-per-second))
+;; Ejemplo de uso
+(let* ((grafo '((0 (1 4) (2 2))
+                (1 (0 4) (2 1) (3 5))
+                (2 (0 2) (1 1) (3 8) (4 10))
+                (3 (1 5) (2 8) (4 2))
+                (4 (2 10) (3 2)))
+       (inicio 0)
+       (objetivo 4)
+       (tiempo-inicio (get-internal-real-time))) ; Marcar el inicio del tiempo de ejecución
+  (dibujar-grafo grafo)
+  (a-estrella grafo inicio objetivo)
+  (format t "Tiempo de ejecución: ~A segundos~%" (get-tiempo-ejecucion tiempo-inicio))) ; Mostrar el tiempo de ejecución
+
